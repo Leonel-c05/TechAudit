@@ -23,7 +23,9 @@ class TechAuditApp : Application() {
         val equipoDao = database.auditDao()
 
         CoroutineScope(Dispatchers.IO).launch {
-
+        /*
+        Agregar laboratorios nuevos
+         */
             // ---------- LABORATORIOS ----------
             val labs = laboratorioDao.obtenerLaboratorios()
 
