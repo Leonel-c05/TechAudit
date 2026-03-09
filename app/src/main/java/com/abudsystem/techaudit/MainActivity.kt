@@ -2,9 +2,12 @@ package com.abudsystem.techaudit
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -16,9 +19,10 @@ import com.abudsystem.techaudit.adapter.AuditAdapter
 import com.abudsystem.techaudit.adapter.LaboratorioAdapter
 import com.abudsystem.techaudit.databinding.ActivityMainBinding
 import com.abudsystem.techaudit.model.Laboratorio
-import com.abudsystem.techaudit.ui.AuditViewModel
-import kotlinx.coroutines.launch
 import com.abudsystem.techaudit.network.RetrofitInstance
+import com.abudsystem.techaudit.ui.AuditViewModel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,7 +46,6 @@ class MainActivity : AppCompatActivity() {
 
         cargarLaboratorios()
 
-        // OBSERVA EQUIPOS
         viewModel.allItems.observe(this) { lista ->
 
             laboratorioSeleccionado?.let { lab ->
@@ -69,32 +72,75 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // --------------------------
-        // PRUEBA RETROFIT (API REST)
-        // --------------------------
+        // NUEVO LABORATORIO
+        binding.btnNuevoLaboratorio.setOnClickListener {
 
-        lifecycleScope.launch {
+            val input = EditText(this)
 
-            try {
+            AlertDialog.Builder(this)
+                .setTitle("Nuevo Laboratorio")
+                .setMessage("Nombre del laboratorio")
+                .setView(input)
+                .setPositiveButton("Guardar") { _, _ ->
 
-                val posts = RetrofitInstance.api.obtenerPosts()
+                    val nombre = input.text.toString()
 
-                Toast.makeText(
-                    this@MainActivity,
-                    "Retrofit OK: ${posts.size} datos recibidos",
-                    Toast.LENGTH_LONG
-                ).show()
+                    lifecycleScope.launch {
 
-            } catch (e: Exception) {
+                        val dao = (application as TechAuditApp).database.laboratorioDAO()
 
-                Toast.makeText(
-                    this@MainActivity,
-                    "Error conectando API",
-                    Toast.LENGTH_LONG
-                ).show()
+                        dao.insertar(
+                            Laboratorio(
+                                nombre = nombre,
+                                edificio = "A"
+                            )
+                        )
 
+                        cargarLaboratorios()
+                    }
+
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+
+        // SINCRONIZAR
+        binding.btnSincronizar.setOnClickListener {
+
+            lifecycleScope.launch {
+
+                try {
+
+                    binding.progressSync.visibility = View.VISIBLE
+
+                    val dao = (application as TechAuditApp).database.auditDao()
+                    val equipos = dao.getAllItems().first()
+
+                    for (equipo in equipos) {
+
+                        RetrofitInstance.api.obtenerPosts()
+
+                    }
+
+                    binding.progressSync.visibility = View.GONE
+
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Sincronización exitosa",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                } catch (e: Exception) {
+
+                    binding.progressSync.visibility = View.GONE
+
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Error al sincronizar",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
-
         }
 
         enableEdgeToEdge()
