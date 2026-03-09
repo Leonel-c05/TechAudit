@@ -1,6 +1,6 @@
 package com.abudsystem.techaudit.model
 /*
-creacion de la nueva entidad
+creacion de la nueva entidad para la nueva tabla en la base de datos
  */
 import androidx.room.Entity
 import androidx.room.PrimaryKey
